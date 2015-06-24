@@ -43,17 +43,8 @@ function vnode (parent) {
     }
   }
 
-  var attributes = parent.attributes;
-  if (attributes.style) attributes.style = style(attributes.style);
-  if (attributes['class']) attributes.className = attributes['class'];
-  if (attributes['for']) {
-    attributes.htmlFor = attributes['for'];
-    delete attributes['for'];
-  }
-
-  attributes.dataset = createDataSet(attributes);
-
-  return createVNode(parent.name, attributes, children);
+  var properties = createProperties(parent.attributes);
+  return createVNode(parent.name, properties, children);
 }
 
 function style (raw) {
@@ -64,25 +55,50 @@ function style (raw) {
   var len = fields.length;
   var i = -1;
   var s;
+  var field;
 
   while (++i < len) {
-    s = fields[i].indexOf(':');
-    result[fields[i].slice(0, s)] = fields[i].slice(s + 1).trim();
+    field = fields[i].trim();
+    if (!field) continue;
+    s = field.indexOf(':');
+    result[field.slice(0, s)] = field.slice(s + 1).trim();
   }
 
   return result;
 }
 
-function createDataSet (props) {
-  var dataset;
-  var key;
+function createProperties (attributes) {
+  var properties = {};
+  var attrs = {};
 
-  for (key in props) {
-    if (key.slice(0, 5) == 'data-') {
-      dataset || (dataset = {});
-      dataset[camel(key.slice(5))] = props[key];
+  for (var key in attributes) {
+    if (!attributes.hasOwnProperty(key)) continue;
+
+    switch (key) {
+    case 'style':
+      properties.style = style(attributes.style);
+      break;
+    case 'class':
+      properties.className = attributes['class'];
+      break;
+    case 'for':
+      properties.htmlFor = attributes['for'];
+      break;
+    default:
+      if (key.indexOf('data-') === 0) {
+        addDataSet(properties, key, attributes[key]);
+      } else {
+        attrs[key] = attributes[key];
+      }
     }
   }
 
-  return dataset;
+  properties.attributes = attrs;
+
+  return properties;
+}
+
+function addDataSet (properties, key, value) {
+  properties.dataset || (properties.dataset = {});
+  properties.dataset[camel(key.slice(5))] = value;
 }
