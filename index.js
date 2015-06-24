@@ -1,4 +1,5 @@
 var createVNode = require('virtual-dom/h');
+var svg = require('virtual-dom/virtual-hyperscript/svg');
 var htmltree = require("htmltree");
 var camel = require('to-camel-case');
 
@@ -22,10 +23,11 @@ function virtualHTML (html, callback) {
   }
 }
 
-function vnode (parent) {
+function vnode(parent, svgParent) {
   if (parent.type == "text") return parent.data;
   if (parent.type != "tag") return;
 
+  var isSVG = parent.name === 'svg' || svgParent;
   var children;
   var child;
   var len;
@@ -37,13 +39,16 @@ function vnode (parent) {
     i = -1;
 
     while (++i < len) {
-      child = vnode(parent.children[i]);
+      child = vnode(parent.children[i], isSVG);
       if (!child) continue;
       children.push(child);
     }
   }
 
   var properties = createProperties(parent.attributes);
+  if (isSVG) {
+    return svg(parent.name, properties, children, true);
+  }
   return createVNode(parent.name, properties, children);
 }
 
